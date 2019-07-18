@@ -89,7 +89,6 @@ class Snake:
       raise "WTF direction wrong"
     for seg in self.segments:
       if seg.x == self.head_x and seg.y == self.head_y:
-        print("SNAKE YEETED ITSELF")
         return True
     self.segments.insert(0, Segment(self.head_x, self.head_y))
     if self.board.apple_x == self.head_x and self.board.apple_y == self.head_y:
