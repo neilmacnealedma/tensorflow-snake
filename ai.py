@@ -4,39 +4,54 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.ERROR)
 import game
+import numpy as np
 
-POPULATION = 100
+POPULATION = 10
 STEPS = 200
 
 def create_model():
   model = tf.keras.models.Sequential([
-    tf.keras.layers.Flatten(input_shape=(20, 20)),
+    tf.keras.layers.Dense(20 * 20 + 4, activation='relu', dtype=tf.float64),
     tf.keras.layers.Dense(128, activation='relu'),
     tf.keras.layers.Dropout(0.8),
-    tf.keras.layers.Dense(10, activation='softmax')
+    tf.keras.layers.Dense(4, activation='softmax')
   ])
 
-  model.compile(optimizer='ftrl',
+  model.compile(optimizer='adam',
                 loss='sparse_categorical_crossentropy',
                 metrics=['accuracy'])
 
   return model
 
-def train(board, generations):
-  models = []
-  steps = []
-  scores = []
+class AI:
 
-  for _ in range(POPULATION):
-    models.append(create_model)
-    scores.append(0)
-    steps.append([])
+  def __init__(self):
+    self.models = []
+    self.all_steps = []
+    self.scores = []
 
-  for _ in range(generations):
-    tmp_board = game.Board(board.width, board.height, None)
+    for _ in range(POPULATION):
+      self.models.append(create_model())
+      self.scores.append(0)
+      self.all_steps.append([])
 
+  def train_once(self, board, generations):
     for i in range(POPULATION):
-      model = models[i]
+      board = game.Board(board.width, board.height, None)
+      model = self.models[i]
+      steps = self.all_steps[i]
       for _ in range(STEPS):
-        X = tmp_board.create_tf_input()
-        prediction = model.predict(X)
+        input = board.create_tf_input()
+        prediction = model.predict(np.array([input]))[0]
+        direction = np.argmax(prediction)
+        steps.append([input, direction])
+        board.ai_control(direction)
+        needs_die = board.update()
+        if needs_die:
+          break
+      scores[i] = board.get_score()
+
+    succesful_models = []
+
+  def control(board):
+    pass

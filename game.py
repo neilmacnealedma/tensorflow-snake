@@ -29,6 +29,9 @@ class Board:
     if keys[pygame.K_a]:
       self.snake.direction = 3
 
+  def ai_control(self, direction):
+    self.snake.direction = direction
+
   def update(self):
     needs_die = self.snake.update()
     self.time_survived += 1
@@ -49,11 +52,15 @@ class Board:
     self.apple_y = random.randrange(0, self.height)
 
   def create_tf_input(self):
-    arr = np.empty((self.width, self.height), dtype=np.int)
+    arr = np.zeros((self.width * self.height + 4), dtype=np.int)
     for seg in self.snake.segments:
-      arr[seg.y][seg.x] = 1
-    arr[self.apple_y][self.apple_x] = 2
-    print(arr)
+      arr[seg.y * self.width + seg.x] = 1
+    arr[self.apple_y * self.width + self.apple_x] = 2
+    arr[self.width * self.height + self.snake.direction] = 1
+    return arr
+
+  def get_score(self):
+    return self.time_survived + self.num_apples * 20
 
 class Snake:
 

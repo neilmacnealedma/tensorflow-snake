@@ -1,7 +1,7 @@
 
 import pygame
 import game
-import ai
+import ai as ai_module
 
 pygame.init()
 
@@ -30,7 +30,8 @@ def manual_game():
     clock.tick(60)
 
 def ai_game():
-  ai.train(board, generations=5)
+  ai = ai_module.AI()
+  ai.train_once(board)
 
   crashed = False
   frame = 0
