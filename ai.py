@@ -10,13 +10,26 @@ import random
 POPULATION = 20
 STEPS = 200
 
+class SnakeModel(tf.keras.Model):
+
+  def __init__(self):
+    super(SnakeModel, self).__init__()
+    self.my_layers = [
+      tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32), # need 4 more nodes
+      tf.keras.layers.Dense(128, activation='relu'),
+      tf.keras.layers.Dropout(0.8),
+      tf.keras.layers.Dense(4, activation='softmax')
+    ]
+
+  def call(self, inputs):
+    tensor = inputs
+    for layer in self.my_layers:
+      tensor = layer(tensor)
+    return tensor
+
+
 def create_model():
-  model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(input_shape=(20, 20) + 4, activation='relu', dtype=tf.float32),
-    tf.keras.layers.Dense(128, activation='relu'),
-    tf.keras.layers.Dropout(0.8),
-    tf.keras.layers.Dense(4, activation='softmax')
-  ])
+  model = SnakeModel()
 
   model.compile(optimizer='adam',
                 loss='sparse_categorical_crossentropy',
@@ -25,12 +38,7 @@ def create_model():
   return model
 
 def mutate(model):
-  new_model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(input_shape=(20, 20) + 4, activation='relu', dtype=tf.float32),
-    tf.keras.layers.Dense(128, activation='relu'),
-    tf.keras.layers.Dropout(0.8),
-    tf.keras.layers.Dense(4, activation='softmax')
-  ])
+  model = SnakeModel()
 
   new_model.set_weights(model.get_weights())
   weights = new_model.trainable_weights
