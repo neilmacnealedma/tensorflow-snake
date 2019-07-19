@@ -14,8 +14,9 @@ class SnakeModel(tf.keras.Model):
 
   def __init__(self):
     super(SnakeModel, self).__init__()
-    self.my_layers = [
-      tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32), # need 4 more nodes
+    self.board_input = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32)
+    self.direction_input = tf.keras.layers.Dense(4, activation='relu', dtype=tf.float32)
+    self.hidden_layers = [
       tf.keras.layers.Dense(128, activation='relu'),
       tf.keras.layers.Dropout(0.8),
       tf.keras.layers.Dense(4, activation='softmax')
@@ -23,6 +24,13 @@ class SnakeModel(tf.keras.Model):
 
   def call(self, inputs):
     tensor = inputs
+    board_tensor, direction_tensor = tf.split(tensor[:400], (400, 4), 1)
+    board_tensor = tf.reshape(board_tensor, (1, 20, 20, 1))
+    board_tensor = self.board_input(board_tensor)
+    direction_tensor = self.direction_input(direction_tensor)
+    print(board_tensor)
+    print(direction_tensor)
+    tensor = tf.concat(board_tensor, direction_tensor)
     for layer in self.my_layers:
       tensor = layer(tensor)
     return tensor
