@@ -5,6 +5,7 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.ERROR)
 import game
 import numpy as np
+import random
 
 POPULATION = 20
 STEPS = 200
@@ -22,6 +23,26 @@ def create_model():
                 metrics=['accuracy'])
 
   return model
+
+def mutate(model):
+  new_model = tf.keras.models.Sequential([
+    tf.keras.layers.Conv2D(input_shape=(20, 20) + 4, activation='relu', dtype=tf.float32),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.8),
+    tf.keras.layers.Dense(4, activation='softmax')
+  ])
+
+  new_model.set_weights(model.get_weights())
+  weights = new_model.trainable_weights
+
+  for i in range(len(weights)):
+    weights[i].assign(weights[i] + random.randint(-10, 10) * 0.01)
+
+  new_model.compile(optimizer='adam',
+                loss='sparse_categorical_crossentropy',
+                metrics=['accuracy'])
+
+  return new_model
 
 class AI:
 
@@ -69,24 +90,18 @@ class AI:
       steps = all_steps[i]
       if score >= median_score and len(succesful_models) < POPULATION:
         succesful_models.append(model)
-        succesful_models.append(model)
+        succesful_models.append(mutate(model))
         succesful_steps.append(steps)
         succesful_steps.append(steps)
         succesful_scores.append(score)
         succesful_scores.append(score)
 
+    max_score = 0
     for i in range(POPULATION):
       score = succesful_scores[i]
-      model = succesful_models[i]
-      steps = succesful_steps[i]
-      X = np.empty((len(steps), 20 * 20 + 4))
-      Y = np.empty((len(steps), 1))
-      i = 0
-      for step in steps:
-        X[i] = step[0]
-        Y[i] = [step[1]]
-        i += 1
-      model.fit(X, Y)
+      if score > max_score:
+        max_score = score
+        self.best_model_index = i
 
   def control(self, board):
     model = self.models[self.best_model_index]
