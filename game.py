@@ -52,7 +52,7 @@ class Board:
     self.apple_y = random.randrange(0, self.height)
 
   def create_tf_input(self):
-    arr = np.zeros((self.width * self.height + 4), dtype=np.int)
+    arr = np.zeros((self.width * self.height + 4), dtype=np.float32)
     for seg in self.snake.segments:
       arr[seg.y * self.width + seg.x] = 1
     arr[self.apple_y * self.width + self.apple_x] = 2
@@ -89,6 +89,7 @@ class Snake:
       raise "WTF direction wrong"
     for seg in self.segments:
       if seg.x == self.head_x and seg.y == self.head_y:
+        print("Snake killed itself")
         return True
     self.segments.insert(0, Segment(self.head_x, self.head_y))
     if self.board.apple_x == self.head_x and self.board.apple_y == self.head_y:

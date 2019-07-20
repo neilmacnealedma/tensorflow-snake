@@ -9,8 +9,6 @@ display = pygame.display.set_mode((800,600))
 pygame.display.set_caption('Snake')
 clock = pygame.time.Clock()
 
-board = game.Board(20, 20, display)
-
 def manual_game():
   crashed = False
   frame = 0
@@ -31,23 +29,28 @@ def manual_game():
 
 def ai_game():
   ai = ai_module.AI()
-  ai.train_once(board)
 
-  crashed = False
-  frame = 0
-  while not crashed:
-    for event in pygame.event.get():
-      if event.type == pygame.QUIT:
-        crashed = True
+  needs_train = True
+  while needs_train:
+    crashed = False
+    frame = 0
+    board = game.Board(20, 20, display)
+    ai.train_once(board)
+    needs_train = False
+    while not crashed:
+      for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+          crashed = True
 
-    if frame >= 20:
-      ai.control(board)
-      if board.update():
-        crashed = True
-      frame = 0
-    frame += 1
-    board.draw()
-    pygame.display.update()
-    clock.tick(60)
+      if frame >= 5:
+        ai.control(board)
+        if board.update():
+          crashed = True
+          needs_train = True
+        frame = 0
+      frame += 1
+      board.draw()
+      pygame.display.update()
+      clock.tick(60)
 
 ai_game()

@@ -7,34 +7,37 @@ import game
 import numpy as np
 import random
 
-POPULATION = 20
+POPULATION = 10
 STEPS = 200
 
 class SnakeModel(tf.keras.Model):
 
   def __init__(self):
     super(SnakeModel, self).__init__()
-    self.board_input = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32)
-    self.direction_input = tf.keras.layers.Dense(4, activation='relu', dtype=tf.float32)
+    self.board_input = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32, name='board-input')
+    self.flatten_layer = tf.keras.layers.Flatten(name='flatten')
+    self.direction_input = tf.keras.layers.Dense(4, activation='relu', dtype=tf.float32, name='direction-input')
     self.hidden_layers = [
-      tf.keras.layers.Dense(128, activation='relu'),
+      tf.keras.layers.Dense(512, activation='relu', name='hidden-512'),
       tf.keras.layers.Dropout(0.8),
-      tf.keras.layers.Dense(4, activation='softmax')
+      tf.keras.layers.Dense(256, activation='relu', name='hidden-256'),
+      tf.keras.layers.Dropout(0.8),
+      tf.keras.layers.Dense(128, activation='relu', name='hidden-128'),
+      tf.keras.layers.Dropout(0.8),
+      tf.keras.layers.Dense(4, activation='softmax', name='output')
     ]
 
   def call(self, inputs):
     tensor = inputs
-    board_tensor, direction_tensor = tf.split(tensor[:400], (400, 4), 1)
+    board_tensor, direction_tensor = tf.split(tensor, (400, 4), 1)
     board_tensor = tf.reshape(board_tensor, (1, 20, 20, 1))
     board_tensor = self.board_input(board_tensor)
+    board_tensor = self.flatten_layer(board_tensor)
     direction_tensor = self.direction_input(direction_tensor)
-    print(board_tensor)
-    print(direction_tensor)
-    tensor = tf.concat(board_tensor, direction_tensor)
-    for layer in self.my_layers:
+    tensor = tf.concat([board_tensor, direction_tensor], 1)
+    for layer in self.hidden_layers:
       tensor = layer(tensor)
     return tensor
-
 
 def create_model():
   model = SnakeModel()
@@ -46,11 +49,12 @@ def create_model():
   return model
 
 def mutate(model):
-  model = SnakeModel()
+  new_model = SnakeModel()
 
+  new_model.predict(np.empty((1, 404)))
   new_model.set_weights(model.get_weights())
-  weights = new_model.trainable_weights
 
+  weights = new_model.trainable_weights
   for i in range(len(weights)):
     weights[i].assign(weights[i] + random.randint(-10, 10) * 0.01)
 
@@ -71,6 +75,7 @@ class AI:
       self.scores.append(0)
 
   def train_once(self, board):
+    print("Started training generation {}")
     all_steps = []
     for i in range(POPULATION):
       board = game.Board(board.width, board.height, None)
@@ -97,6 +102,7 @@ class AI:
         break
       i += 1
 
+    print("Mutating models")
     succesful_models = []
     succesful_scores = []
     succesful_steps = []
@@ -105,12 +111,17 @@ class AI:
       model = self.models[i]
       steps = all_steps[i]
       if score >= median_score and len(succesful_models) < POPULATION:
+        new_model = mutate(model)
         succesful_models.append(model)
-        succesful_models.append(mutate(model))
+        succesful_models.append(new_model)
         succesful_steps.append(steps)
-        succesful_steps.append(steps)
+        succesful_steps.append([])
         succesful_scores.append(score)
-        succesful_scores.append(score)
+        succesful_scores.append(0)
+    print("Finished mutations")
+
+    self.models = succesful_models
+    self.scores = succesful_scores
 
     max_score = 0
     for i in range(POPULATION):
@@ -118,6 +129,7 @@ class AI:
       if score > max_score:
         max_score = score
         self.best_model_index = i
+    print("Finished training generation {}")
 
   def control(self, board):
     model = self.models[self.best_model_index]
