@@ -7,7 +7,7 @@ import game
 import numpy as np
 import random
 
-POPULATION = 10
+POPULATION = 50
 STEPS = 200
 
 class SnakeModel(tf.keras.Model):
@@ -48,34 +48,26 @@ def create_model():
 
   return model
 
-def mutate(model):
-  new_model = SnakeModel()
+def mutate(good_model, bad_model):
+  bad_model.set_weights(good_model.get_weights())
 
-  new_model.predict(np.empty((1, 404)))
-  new_model.set_weights(model.get_weights())
-
-  weights = new_model.trainable_weights
+  weights = bad_model.trainable_weights
   for i in range(len(weights)):
-    weights[i].assign(weights[i] + random.randint(-10, 10) * 0.01)
-
-  new_model.compile(optimizer='adam',
-                loss='sparse_categorical_crossentropy',
-                metrics=['accuracy'])
-
-  return new_model
+    weights[i].assign(weights[i] + random.randint(-100, 100) * 0.002)
 
 class AI:
 
   def __init__(self):
     self.models = []
     self.scores = []
+    self.generation = 0
 
     for _ in range(POPULATION):
       self.models.append(create_model())
       self.scores.append(0)
 
   def train_once(self, board):
-    print("Started training generation {}")
+    print("Started training generation {}".format(self.generation))
     all_steps = []
     for i in range(POPULATION):
       board = game.Board(board.width, board.height, None)
@@ -103,33 +95,37 @@ class AI:
       i += 1
 
     print("Mutating models")
-    succesful_models = []
-    succesful_scores = []
-    succesful_steps = []
+    good_models = []
+    good_scores = []
+    bad_models = []
+    bad_scores = []
     for i in range(POPULATION):
       score = self.scores[i]
       model = self.models[i]
-      steps = all_steps[i]
-      if score >= median_score and len(succesful_models) < POPULATION:
-        new_model = mutate(model)
-        succesful_models.append(model)
-        succesful_models.append(new_model)
-        succesful_steps.append(steps)
-        succesful_steps.append([])
-        succesful_scores.append(score)
-        succesful_scores.append(0)
+      if score >= median_score and len(good_models) < POPULATION / 2:
+        good_models.append(model)
+        good_scores.append(score)
+      else:
+        bad_models.append(model)
+        bad_scores.append(score)
+    print(good_models)
+    print(bad_models)
+    for i in range(len(good_models)):
+      print("Mutating model " + str(i))
+      mutate(good_models[i], bad_models[i])
     print("Finished mutations")
 
-    self.models = succesful_models
-    self.scores = succesful_scores
+    self.models = good_models + bad_models
+    self.scores = good_scores + bad_scores
 
     max_score = 0
     for i in range(POPULATION):
-      score = succesful_scores[i]
+      score = self.scores[i]
       if score > max_score:
         max_score = score
         self.best_model_index = i
-    print("Finished training generation {}")
+    print("Finished training generation {}".format(self.generation))
+    self.generation += 1
 
   def control(self, board):
     model = self.models[self.best_model_index]

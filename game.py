@@ -2,6 +2,7 @@
 import pygame
 import random
 import numpy as np
+import collections
 
 class Board:
 
@@ -17,6 +18,7 @@ class Board:
     self.display = display
     self.num_apples = 0
     self.time_survived = 0
+    self.time_since_last_apple = 0
 
   def manual_control(self):
     keys = pygame.key.get_pressed()
@@ -35,6 +37,9 @@ class Board:
   def update(self):
     needs_die = self.snake.update()
     self.time_survived += 1
+    self.time_since_last_apple += 1
+    if self.time_since_last_apple > 400:
+      return True
     return_val = needs_die or self.snake.head_x < 0 or self.snake.head_x > self.width - 1 or self.snake.head_y < 0 or self.snake.head_y > self.height - 1
     return return_val
 
@@ -47,9 +52,11 @@ class Board:
     self.display.fill(color, (pos[0] * self.tile_width, pos[1] * self.tile_height, self.tile_width, self.tile_height))
 
   def new_apple(self):
+    print("SNAKE GAWT LE APPL")
     self.num_apples += 1
     self.apple_x = random.randrange(0, self.width)
     self.apple_y = random.randrange(0, self.height)
+    self.time_since_last_apple = 0
 
   def create_tf_input(self):
     arr = np.zeros((self.width * self.height + 4), dtype=np.float32)
@@ -60,12 +67,12 @@ class Board:
     return arr
 
   def get_score(self):
-    return self.time_survived + self.num_apples * 20
+    return self.time_survived + self.num_apples * 100
 
 class Snake:
 
   def __init__(self, x, y, board):
-    self.segments = []
+    self.segments = collections.deque()
     self.segments.append(Segment(x, y))
     self.segments.append(Segment(x - 1, y))
     self.segments.append(Segment(x - 2, y))
@@ -91,7 +98,7 @@ class Snake:
       if seg.x == self.head_x and seg.y == self.head_y:
         print("Snake killed itself")
         return True
-    self.segments.insert(0, Segment(self.head_x, self.head_y))
+    self.segments.appendleft(Segment(self.head_x, self.head_y))
     if self.board.apple_x == self.head_x and self.board.apple_y == self.head_y:
       self.board.new_apple()
     else:
