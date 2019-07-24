@@ -3,50 +3,63 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.ERROR)
+import keras
 import game
 import numpy as np
 import random
+import rl
+import rl.agents
+import rl.memory
+import rl.policy
 
 POPULATION = 50
 STEPS = 200
 
-class SnakeModel(tf.keras.Model):
+class SnakeInputLayer(keras.layers.Layer):
 
   def __init__(self):
-    super(SnakeModel, self).__init__()
-    self.board_input = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32, name='board-input')
-    self.pooling_layer = tf.keras.layers.MaxPooling2D((2, 2), 1, name='pooling')
-    self.flatten_layer = tf.keras.layers.Flatten(name='flatten')
-    self.direction_input = tf.keras.layers.Dense(4, activation='relu', dtype=tf.float32, name='direction-input')
-    self.hidden_layers = [
-      tf.keras.layers.Dense(512, activation='relu', name='hidden-512'),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.Dense(256, activation='relu', name='hidden-256'),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.Dense(4, activation='softmax', name='output')
-    ]
+    self.output_dim = 8196
+    super(SnakeInputLayer, self).__init__(input_shape=(404,))
+    self.board_input = keras.layers.Conv2D(filters=32, kernel_size=(4, 4), input_shape=(20, 20), activation='relu', dtype=tf.float32, name='board-input')
+    self.pooling_layer = keras.layers.MaxPooling2D((2, 2), 1, name='pooling')
+    self.flatten_layer = keras.layers.Flatten(name='flatten')
+    self.direction_input = keras.layers.Dense(4, activation='relu', dtype=tf.float32, name='direction-input')
 
   def call(self, inputs):
     tensor = inputs
+    print(tensor)
     board_tensor, direction_tensor = tf.split(tensor, (400, 4), 1)
     board_tensor = tf.reshape(board_tensor, (1, 20, 20, 1))
     board_tensor = self.board_input(board_tensor)
     board_tensor = self.pooling_layer(board_tensor)
     board_tensor = self.flatten_layer(board_tensor)
     direction_tensor = self.direction_input(direction_tensor)
-    tensor = tf.concat([board_tensor, direction_tensor], 1)
-    for layer in self.hidden_layers:
-      tensor = layer(tensor)
-    return tensor
+    return tf.concat([board_tensor, direction_tensor], 1)
+
+  def compute_output_shape(self, input_shape):
+    return (input_shape[0], self.output_dim)
 
 def create_model():
-  model = SnakeModel()
+  model = keras.models.Sequential([
+    SnakeInputLayer(),
+    keras.layers.Dense(512, activation='relu', name='hidden-512'),
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(256, activation='relu', name='hidden-256'),
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(4, activation='softmax', name='output')
+  ])
+  memory = rl.memory.SequentialMemory(limit=50000, window_length=1)
+  policy = rl.policy.BoltzmannQPolicy()
+  dqn = rl.agents.dqn.DQNAgent(model=model,
+  memory=memory,
+  target_model_update=1e-2,
+  policy=policy,
+  nb_actions=4,
+  custom_model_objects={SnakeInputLayer: SnakeInputLayer})
 
-  model.compile(optimizer='adam',
-                loss='sparse_categorical_crossentropy',
-                metrics=['accuracy'])
+  dqn.compile(keras.optimizers.Adam(lr=1e-3), metrics=['mae'])
 
-  return model
+  return dqn
 
 def mutate(good_model, bad_model):
   bad_model.set_weights(good_model.get_weights())

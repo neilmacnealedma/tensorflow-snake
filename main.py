@@ -1,7 +1,7 @@
 
 import pygame
 import game
-import ai as ai_module
+import ai_q as ai_module
 
 pygame.init()
 
