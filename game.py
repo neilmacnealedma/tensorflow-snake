@@ -48,7 +48,7 @@ class Board:
     self.time_survived += 1
     self.time_since_last_apple += 1
     if self.time_since_last_apple > 400:
-      return True
+      return True, 0
     return_val = needs_die or self.snake.head_x < 0 or self.snake.head_x > self.width - 1 or self.snake.head_y < 0 or self.snake.head_y > self.height - 1
     reward = 1
     if self.got_apple_flag:
@@ -74,7 +74,8 @@ class Board:
   def create_tf_input(self):
     arr = np.zeros((self.width * self.height + 4), dtype=np.float32)
     for seg in self.snake.segments:
-      arr[seg.y * self.width + seg.x] = 1
+      if seg.x < self.width and seg.y < self.height and seg.x >= 0 and seg.y >= 0:
+        arr[seg.y * self.width + seg.x] = 1
     arr[self.apple_y * self.width + self.apple_x] = 2
     arr[self.width * self.height + self.snake.direction] = 1
     return arr

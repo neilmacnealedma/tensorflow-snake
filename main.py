@@ -55,11 +55,11 @@ def ai_game():
       clock.tick(60)
 
 def ai_q_game():
-  ai = ai_q_module.AI()
+  board = game.Board(20, 20, display)
+  ai = ai_q_module.AI(board)
 
   while True:
-    board = game.Board(20, 20, display)
-    ai.train(board, 10000)
-    ai.show_game(board)
+    ai.train(10000)
+    ai.show_game()
 
 ai_q_game()

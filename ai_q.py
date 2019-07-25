@@ -11,6 +11,7 @@ import rl
 import rl.agents
 import rl.memory
 import rl.policy
+import copy
 
 POPULATION = 50
 STEPS = 200
@@ -34,7 +35,8 @@ class SnakeInputLayer(keras.layers.Layer):
     board_tensor = self.pooling_layer(board_tensor)
     board_tensor = self.flatten_layer(board_tensor)
     direction_tensor = self.direction_input(direction_tensor)
-    return tf.concat([board_tensor, direction_tensor], 1)
+    output_tensor = tf.concat([board_tensor, direction_tensor], 1)
+    return output_tensor
 
   def compute_output_shape(self, input_shape):
     return (input_shape[0], self.output_dim)
@@ -52,11 +54,11 @@ def create_model():
     keras.layers.Dropout(0.2),
     keras.layers.Dense(4, activation='softmax', name='output')
   ])
-  memory = rl.memory.SequentialMemory(limit=50000, window_length=1)
+  memory = rl.memory.SequentialMemory(limit=10000, window_length=1)
   policy = rl.policy.BoltzmannQPolicy()
   dqn = rl.agents.dqn.DQNAgent(model=model,
   memory=memory,
-  target_model_update=1e-2,
+  target_model_update=10,
   policy=policy,
   nb_actions=4,
   custom_model_objects={'SnakeInputLayer': SnakeInputLayer})
@@ -80,17 +82,19 @@ class BoardEnv():
   def step(self, action):
     self.board.ai_control(action)
     done, reward = self.board.update()
-    return self.create_obs(), reward, done, {}
+    obs = self.create_obs()
+    return obs, reward, done, {}
 
   def render(self, mode):
-    print("RENDERING YEET")
+    pass
 
 class AI:
-  def __init__(self):
+  def __init__(self, board):
     self.model = create_model()
+    self.env = BoardEnv(board)
 
-  def train(self, board, steps):
-    self.model.fit(BoardEnv(board), steps)
+  def train(self, steps):
+    self.model.fit(self.env, nb_steps=steps, log_interval=steps)
 
-  def show_game(self, board):
-    self.model.test(BoardEnv(board), nb_episodes=5, visualize=True)
+  def show_game(self):
+    self.model.test(self.env, nb_episodes=5, visualize=True)
