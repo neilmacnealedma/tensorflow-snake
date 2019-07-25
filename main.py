@@ -1,7 +1,8 @@
 
 import pygame
 import game
-import ai_q as ai_module
+import ai as ai_module
+import ai_q as ai_q_module
 
 pygame.init()
 
@@ -53,4 +54,12 @@ def ai_game():
       pygame.display.update()
       clock.tick(60)
 
-ai_game()
+def ai_q_game():
+  ai = ai_q_module.AI()
+
+  while True:
+    board = game.Board(20, 20, display)
+    ai.train(board, 10000)
+    ai.show_game(board)
+
+ai_q_game()

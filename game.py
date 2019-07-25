@@ -7,7 +7,6 @@ import collections
 class Board:
 
   def __init__(self, width, height, display):
-    self.tiles = []
     self.width = width
     self.height = height
     self.snake = Snake(int(width / 2), int(height / 2), self)
@@ -19,6 +18,16 @@ class Board:
     self.num_apples = 0
     self.time_survived = 0
     self.time_since_last_apple = 0
+    self.got_apple_flag = False
+
+  def reset(self):
+    self.snake = Snake(int(self.width / 2), int(self.height / 2), self)
+    self.apple_x = random.randrange(0, self.width)
+    self.apple_y = random.randrange(0, self.height)
+    self.num_apples = 0
+    self.time_survived = 0
+    self.time_since_last_apple = 0
+    self.got_apple_flag = False
 
   def manual_control(self):
     keys = pygame.key.get_pressed()
@@ -41,7 +50,11 @@ class Board:
     if self.time_since_last_apple > 400:
       return True
     return_val = needs_die or self.snake.head_x < 0 or self.snake.head_x > self.width - 1 or self.snake.head_y < 0 or self.snake.head_y > self.height - 1
-    return return_val
+    reward = 1
+    if self.got_apple_flag:
+      reward += 100
+      self.got_apple_flag = False
+    return return_val, reward
 
   def draw(self):
     self.display.fill((0, 0, 0))
@@ -52,11 +65,11 @@ class Board:
     self.display.fill(color, (pos[0] * self.tile_width, pos[1] * self.tile_height, self.tile_width, self.tile_height))
 
   def new_apple(self):
-    print("SNAKE GAWT LE APPL")
     self.num_apples += 1
     self.apple_x = random.randrange(0, self.width)
     self.apple_y = random.randrange(0, self.height)
     self.time_since_last_apple = 0
+    self.got_apple_flag = True
 
   def create_tf_input(self):
     arr = np.zeros((self.width * self.height + 4), dtype=np.float32)
@@ -96,7 +109,6 @@ class Snake:
       raise "WTF direction wrong"
     for seg in self.segments:
       if seg.x == self.head_x and seg.y == self.head_y:
-        print("Snake killed itself")
         return True
     self.segments.appendleft(Segment(self.head_x, self.head_y))
     if self.board.apple_x == self.head_x and self.board.apple_y == self.head_y:
