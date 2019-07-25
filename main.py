@@ -64,4 +64,4 @@ def ai_q_game():
     ai.train(2000)
     ai.show_game()
 
-manual_game()
+ai_q_game()

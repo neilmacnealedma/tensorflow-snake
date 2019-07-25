@@ -3,6 +3,7 @@ import pygame
 import random
 import numpy as np
 import collections
+import math
 
 class Board:
 
@@ -45,11 +46,12 @@ class Board:
       self.ai_control(new_dir)
 
   def ai_control(self, direction):
-    if self.snake.direction != (direction + 2) % 4:
-      self.snake.direction = direction
-      self.reward = 1
+    if self.snake.direction == (direction + 2) % 4:
+      self.reward = -50
     else:
-      self.reward = -1
+      # dist to apple, where closer is higher score
+      self.reward = math.sqrt((self.snake.head_x - self.apple_x) ** 2 + (self.snake.head_y - self.apple_y) ** 2) * -1 + 30
+      self.snake.direction = direction
 
   def update(self):
     needs_die = self.snake.update()
