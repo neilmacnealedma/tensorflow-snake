@@ -72,7 +72,6 @@ class BoardEnv():
   def __init__(self, dqn, board):
     self.board = board
     self.dqn = dqn
-    self.clock = pygame.time.Clock()
 
   def reset(self):
     self.board.reset()
@@ -90,7 +89,6 @@ class BoardEnv():
   def render(self, mode):
     self.board.draw()
     pygame.display.update()
-    self.clock.tick(20)
 
 class AI:
   def __init__(self, board):
@@ -98,7 +96,7 @@ class AI:
     self.env = BoardEnv(self.model, board)
 
   def train(self, steps):
-    self.model.fit(self.env, nb_steps=steps, log_interval=200)
+    self.model.fit(self.env, nb_steps=steps, log_interval=200, visualize=True)
 
   def show_game(self):
     self.model.test(self.env, nb_episodes=5, visualize=True)

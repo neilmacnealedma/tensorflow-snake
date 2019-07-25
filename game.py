@@ -19,6 +19,7 @@ class Board:
     self.time_survived = 0
     self.time_since_last_apple = 0
     self.got_apple_flag = False
+    self.reward = 1
 
   def reset(self):
     self.snake = Snake(int(self.width / 2), int(self.height / 2), self)
@@ -31,17 +32,24 @@ class Board:
 
   def manual_control(self):
     keys = pygame.key.get_pressed()
+    new_dir = -1
     if keys[pygame.K_w]:
-      self.snake.direction = 0
+      new_dir = 0
     if keys[pygame.K_d]:
-      self.snake.direction = 1
+      new_dir = 1
     if keys[pygame.K_s]:
-      self.snake.direction = 2
+      new_dir = 2
     if keys[pygame.K_a]:
-      self.snake.direction = 3
+      new_dir = 3
+    if new_dir != -1:
+      self.ai_control(new_dir)
 
   def ai_control(self, direction):
-    self.snake.direction = direction
+    if self.snake.direction != (direction + 2) % 4:
+      self.snake.direction = direction
+      self.reward = 1
+    else:
+      self.reward = -1
 
   def update(self):
     needs_die = self.snake.update()
@@ -50,7 +58,7 @@ class Board:
     if self.time_since_last_apple > 400:
       return True, 0
     return_val = needs_die or self.snake.head_x < 0 or self.snake.head_x > self.width - 1 or self.snake.head_y < 0 or self.snake.head_y > self.height - 1
-    reward = 1
+    reward = self.reward
     if self.got_apple_flag:
       reward += 100
       self.got_apple_flag = False
@@ -75,8 +83,8 @@ class Board:
     arr = np.zeros((self.width * self.height + 4), dtype=np.float32)
     for seg in self.snake.segments:
       if seg.x < self.width and seg.y < self.height and seg.x >= 0 and seg.y >= 0:
-        arr[seg.y * self.width + seg.x] = 1
-    arr[self.apple_y * self.width + self.apple_x] = 2
+        arr[seg.y * self.width + seg.x] = 0.5
+    arr[self.apple_y * self.width + self.apple_x] = 1
     arr[self.width * self.height + self.snake.direction] = 1
     return arr
 

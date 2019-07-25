@@ -13,6 +13,7 @@ clock = pygame.time.Clock()
 def manual_game():
   crashed = False
   frame = 0
+  board = game.Board(20, 20, display)
   while not crashed:
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
@@ -20,7 +21,8 @@ def manual_game():
 
     board.manual_control()
     if frame >= 20:
-      if board.update():
+      done, reward = board.update()
+      if done:
         crashed = True
       frame = 0
     frame += 1
@@ -59,7 +61,7 @@ def ai_q_game():
   ai = ai_q_module.AI(board)
 
   while True:
-    ai.train(200)
+    ai.train(2000)
     ai.show_game()
 
-ai_q_game()
+manual_game()
