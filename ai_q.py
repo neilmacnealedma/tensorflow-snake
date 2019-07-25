@@ -1,4 +1,3 @@
-
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
@@ -12,6 +11,7 @@ import rl.agents
 import rl.memory
 import rl.policy
 import copy
+import pygame
 
 POPULATION = 50
 STEPS = 200
@@ -30,7 +30,7 @@ class SnakeInputLayer(keras.layers.Layer):
     tensor = inputs
     tensor = tf.reshape(tensor, [-1, 404])
     board_tensor, direction_tensor = tf.split(tensor, (400, 4), 1)
-    board_tensor = tf.reshape(board_tensor, (1, 20, 20, 1))
+    board_tensor = tf.reshape(board_tensor, (-1, 20, 20, 1))
     board_tensor = self.board_input(board_tensor)
     board_tensor = self.pooling_layer(board_tensor)
     board_tensor = self.flatten_layer(board_tensor)
@@ -69,8 +69,10 @@ def create_model():
 
 class BoardEnv():
 
-  def __init__(self, board):
+  def __init__(self, dqn, board):
     self.board = board
+    self.dqn = dqn
+    self.clock = pygame.time.Clock()
 
   def reset(self):
     self.board.reset()
@@ -86,15 +88,17 @@ class BoardEnv():
     return obs, reward, done, {}
 
   def render(self, mode):
-    pass
+    self.board.draw()
+    pygame.display.update()
+    self.clock.tick(20)
 
 class AI:
   def __init__(self, board):
     self.model = create_model()
-    self.env = BoardEnv(board)
+    self.env = BoardEnv(self.model, board)
 
   def train(self, steps):
-    self.model.fit(self.env, nb_steps=steps, log_interval=steps)
+    self.model.fit(self.env, nb_steps=steps, log_interval=200)
 
   def show_game(self):
     self.model.test(self.env, nb_episodes=5, visualize=True)

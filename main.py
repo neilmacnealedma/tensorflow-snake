@@ -59,7 +59,7 @@ def ai_q_game():
   ai = ai_q_module.AI(board)
 
   while True:
-    ai.train(10000)
+    ai.train(200)
     ai.show_game()
 
 ai_q_game()
