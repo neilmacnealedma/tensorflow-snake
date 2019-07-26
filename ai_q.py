@@ -84,7 +84,7 @@ class BoardEnv():
     self.board.ai_control(action)
     done, reward = self.board.update()
     obs = self.create_obs()
-    return obs, reward, done, {}
+    return obs, reward, done, {"apples": self.board.num_apples}
 
   def render(self, mode):
     self.board.draw()
@@ -94,9 +94,12 @@ class AI:
   def __init__(self, board):
     self.model = create_model()
     self.env = BoardEnv(self.model, board)
+    self.generation = 0
 
   def train(self, steps):
     self.model.fit(self.env, nb_steps=steps, log_interval=200, visualize=True)
+    self.model.model.save("models/gen-{}.model".format(self.generation))
+    self.generation += 1
 
   def show_game(self):
     self.model.test(self.env, nb_episodes=5, visualize=True)
